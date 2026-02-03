@@ -18,21 +18,17 @@
   var currentPageKey = null;
 
   // -----------------------------------------------------------
-  //  Determine current page from the URL
+  //  Determine current page from data-namespace on .main-w
+  //  (independent of URL slugs — works on staging & production)
   // -----------------------------------------------------------
   function getCurrentPage() {
+    var mainW = document.querySelector(".main-w");
+    if (mainW && mainW.getAttribute("data-namespace")) {
+      return mainW.getAttribute("data-namespace");
+    }
+    // Fallback to URL segment
     var path = window.location.pathname.replace(/\/+$/, "");
-    var segment = path.split("/").pop() || "home";
-
-    // Webflow sometimes uses full paths; normalise
-    var map = {
-      "": "home",
-      home: "home",
-      management: "management",
-      submission: "submission",
-      about: "about",
-    };
-    return map[segment] || segment;
+    return path.split("/").pop() || "home";
   }
 
   // -----------------------------------------------------------
@@ -142,17 +138,9 @@
 
     // ------ Update w--current immediately on click -----------
     swup.hooks.on("visit:start", function (visit) {
-      if (visit && visit.to && visit.to.url) {
-        var path = visit.to.url.replace(/\/+$/, "");
-        var segment = path.split("/").pop() || "home";
-        var map = {
-          "": "home",
-          home: "home",
-          management: "management",
-          submission: "submission",
-          about: "about",
-        };
-        updateWCurrent(map[segment] || segment);
+      var el = visit && visit.trigger && visit.trigger.el;
+      if (el && el.getAttribute("data-link")) {
+        updateWCurrent(el.getAttribute("data-link"));
       }
     });
 

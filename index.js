@@ -27,7 +27,7 @@
     "/src/pages/global.js",
     "/src/pages/home.js",
     "/src/pages/management.js",
-    "/src/pages/submission.js",
+    "/src/pages/submissions.js",
     "/src/pages/about.js",
     "/src/swup.js",
   ];

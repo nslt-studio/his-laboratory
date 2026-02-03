@@ -178,33 +178,6 @@
   }
 
   // -----------------------------------------------------------
-  //  Reset logo/header to default state (used on page leave)
-  // -----------------------------------------------------------
-  function resetLogoHeader() {
-    var logo = document.querySelector("#logo");
-    var header = document.querySelector(".model-header");
-
-    if (logo) {
-      gsap.to(logo, {
-        opacity: 1,
-        duration: 0.3,
-        delay: 0.3,
-        ease: "power1.out",
-        onStart: function () {
-          logo.style.pointerEvents = "auto";
-        },
-      });
-    }
-    if (header) {
-      gsap.to(header, {
-        opacity: 0,
-        yPercent: 0,
-        ease: "power1.out",
-      });
-    }
-  }
-
-  // -----------------------------------------------------------
   //  Page module
   // -----------------------------------------------------------
   window.HisLab.pages.management = {
@@ -227,6 +200,14 @@
     },
 
     cleanup: function () {
+      // Kill any running GSAP tweens on elements about to be removed
+      var logo = document.querySelector("#logo");
+      var header = document.querySelector(".model-header");
+      var bar = document.querySelector(".model-progress");
+      [logo, header, bar].forEach(function (el) {
+        if (el) gsap.killTweensOf(el);
+      });
+
       // Kill tracked ScrollTriggers
       scrollTriggers.forEach(function (st) {
         st.kill();
@@ -239,9 +220,6 @@
         lenis.off("scroll", lenisScrollHandler);
         lenisScrollHandler = null;
       }
-
-      // Reset logo/header to default visibility
-      resetLogoHeader();
     },
   };
 })();

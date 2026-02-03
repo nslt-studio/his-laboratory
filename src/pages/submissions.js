@@ -1,10 +1,10 @@
 // ============================================================
-//  HIS LABORATORY — Submission Page
+//  HIS LABORATORY — Submissions Page
 // ============================================================
 (function () {
   "use strict";
 
-  window.HisLab.pages.submission = {
+  window.HisLab.pages.submissions = {
     init: function () {
       window.HisLab.initViewButtons();
     },
