@@ -23,8 +23,9 @@
   // -----------------------------------------------------------
   function getCurrentPage() {
     var mainW = document.querySelector(".main-w");
-    if (mainW && mainW.getAttribute("data-namespace")) {
-      return mainW.getAttribute("data-namespace");
+    if (mainW) {
+      var ns = mainW.getAttribute("data-namespace");
+      if (ns) return ns.trim().toLowerCase();
     }
     // Fallback to URL segment
     var path = window.location.pathname.replace(/\/+$/, "");
@@ -52,8 +53,18 @@
     currentPageKey = getCurrentPage();
     updateWCurrent(currentPageKey);
 
+    console.log("[HisLab] page:", currentPageKey, "| registered:", Object.keys(pages).join(", "));
+
     var page = pages[currentPageKey];
-    if (page && page.init) page.init();
+    if (page && page.init) {
+      try {
+        page.init();
+      } catch (err) {
+        console.error("[HisLab] Error in " + currentPageKey + ".init():", err);
+      }
+    } else {
+      console.warn("[HisLab] No module found for page '" + currentPageKey + "'");
+    }
 
     // Re-process images for the new content
     if (window.HisLab.initPreloader) window.HisLab.initPreloader();
@@ -61,7 +72,11 @@
 
   function cleanupCurrentPage() {
     if (currentPageKey && pages[currentPageKey] && pages[currentPageKey].cleanup) {
-      pages[currentPageKey].cleanup();
+      try {
+        pages[currentPageKey].cleanup();
+      } catch (err) {
+        console.error("[HisLab] Error in " + currentPageKey + ".cleanup():", err);
+      }
     }
   }
 
@@ -145,13 +160,16 @@
     });
 
     window.HisLab.swup = swup;
+    console.log("[HisLab] Swup initialized");
   }
 
   // -----------------------------------------------------------
   //  Boot — called after loader completes (or is skipped)
   // -----------------------------------------------------------
   function boot() {
+    console.log("[HisLab] Boot starting");
     window.HisLab.initLoader(function () {
+      console.log("[HisLab] Loader done, initializing Swup + page");
       initSwup();
       initCurrentPage();
     });
