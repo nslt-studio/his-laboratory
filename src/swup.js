@@ -1,0 +1,177 @@
+// ============================================================
+//  HIS LABORATORY — Swup Page Transitions & Routing
+//  Replaces the manual fade-out / window.location.href approach
+//  with Swup SPA-style navigation.
+//
+//  Flow:
+//    1. Loader plays (or is skipped)
+//    2. Swup initialises
+//    3. Current page init() runs
+//    4. On navigation: fade out → cleanup → content swap →
+//       scroll to top → init new page → fade in
+// ============================================================
+(function () {
+  "use strict";
+
+  var TRANS = window.HisLab.TRANS;
+  var pages = window.HisLab.pages;
+  var currentPageKey = null;
+
+  // -----------------------------------------------------------
+  //  Determine current page from the URL
+  // -----------------------------------------------------------
+  function getCurrentPage() {
+    var path = window.location.pathname.replace(/\/+$/, "");
+    var segment = path.split("/").pop() || "home";
+
+    // Webflow sometimes uses full paths; normalise
+    var map = {
+      "": "home",
+      home: "home",
+      management: "management",
+      submission: "submission",
+      about: "about",
+    };
+    return map[segment] || segment;
+  }
+
+  // -----------------------------------------------------------
+  //  Update w--current class on every [data-link] element
+  // -----------------------------------------------------------
+  function updateWCurrent(pageKey) {
+    var navLinks = document.querySelectorAll("[data-link]");
+    navLinks.forEach(function (link) {
+      if (link.getAttribute("data-link") === pageKey) {
+        link.classList.add("w--current");
+      } else {
+        link.classList.remove("w--current");
+      }
+    });
+  }
+
+  // -----------------------------------------------------------
+  //  Page lifecycle helpers
+  // -----------------------------------------------------------
+  function initCurrentPage() {
+    currentPageKey = getCurrentPage();
+    updateWCurrent(currentPageKey);
+
+    var page = pages[currentPageKey];
+    if (page && page.init) page.init();
+
+    // Re-process images for the new content
+    if (window.HisLab.initPreloader) window.HisLab.initPreloader();
+  }
+
+  function cleanupCurrentPage() {
+    if (currentPageKey && pages[currentPageKey] && pages[currentPageKey].cleanup) {
+      pages[currentPageKey].cleanup();
+    }
+  }
+
+  // -----------------------------------------------------------
+  //  Swup initialisation
+  // -----------------------------------------------------------
+  function initSwup() {
+    var swup = new Swup({
+      containers: [".main-w"],
+      animateHistoryBrowsing: true,
+      linkSelector: "a[data-link]",
+    });
+
+    // ------ Leave animation (GSAP fade out) ------------------
+    swup.hooks.replace("animation:out:await", function () {
+      return new Promise(function (resolve) {
+        var mainW = document.querySelector(".main-w");
+        if (!mainW) return resolve();
+
+        gsap.to(mainW, {
+          opacity: 0,
+          duration: TRANS.duration,
+          ease: TRANS.ease,
+          onComplete: resolve,
+        });
+      });
+    });
+
+    // ------ Enter animation (GSAP fade in) -------------------
+    swup.hooks.replace("animation:in:await", function () {
+      return new Promise(function (resolve) {
+        var mainW = document.querySelector(".main-w");
+        if (!mainW) return resolve();
+
+        gsap.to(mainW, {
+          opacity: 1,
+          duration: TRANS.duration,
+          ease: TRANS.ease,
+          onComplete: resolve,
+        });
+      });
+    });
+
+    // ------ Before content swap: cleanup ---------------------
+    swup.hooks.before("content:replace", function () {
+      cleanupCurrentPage();
+    });
+
+    // ------ After content swap: prepare new page -------------
+    swup.hooks.on("content:replace", function () {
+      var mainW = document.querySelector(".main-w");
+      if (mainW) gsap.set(mainW, { opacity: 0 });
+
+      // Scroll to top
+      var lenis = window.lenis;
+      if (lenis && typeof lenis.scrollTo === "function") {
+        lenis.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo(0, 0);
+      }
+
+      // Re-init Webflow if present
+      if (window.Webflow) {
+        window.Webflow.ready();
+        if (window.Webflow.require) {
+          var ix2 = window.Webflow.require("ix2");
+          if (ix2 && ix2.init) ix2.init();
+        }
+      }
+
+      // Initialise the new page
+      initCurrentPage();
+    });
+
+    // ------ Update w--current immediately on click -----------
+    swup.hooks.on("visit:start", function (visit) {
+      if (visit && visit.to && visit.to.url) {
+        var path = visit.to.url.replace(/\/+$/, "");
+        var segment = path.split("/").pop() || "home";
+        var map = {
+          "": "home",
+          home: "home",
+          management: "management",
+          submission: "submission",
+          about: "about",
+        };
+        updateWCurrent(map[segment] || segment);
+      }
+    });
+
+    window.HisLab.swup = swup;
+  }
+
+  // -----------------------------------------------------------
+  //  Boot — called after loader completes (or is skipped)
+  // -----------------------------------------------------------
+  function boot() {
+    window.HisLab.initLoader(function () {
+      initSwup();
+      initCurrentPage();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
