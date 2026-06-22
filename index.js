@@ -1,11 +1,3 @@
-// ============================================================
-//  HIS LABORATORY — Main Script
-//  Single entry point for all pages.
-//
-//  Dependencies (CDN, loaded in Webflow Head):
-//  - Lenis
-//  - GSAP + ScrollTrigger + CustomEase
-// ============================================================
 (function () {
   "use strict";
 

@@ -1,0 +1,18 @@
+{
+  "name": "his-laboratory",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "VITE_DEV=1 vite build --watch",
+    "build": "vite build",
+    "deploy": "vite build && wrangler pages deploy dist --project-name his-laboratory"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "wrangler": "^3.80.0"
+  },
+  "dependencies": {
+    "gsap": "^3.14.1",
+    "lenis": "^1.3.17"
+  }
+}
